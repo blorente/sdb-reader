@@ -18,14 +18,5 @@ object Cli {
         if (File(x).exists) success
         else failure("Project jars file not found"))
       .action((x, c) => c.copy(projectJars = File(x)))
-
-    opt[String]("output")
-      .required()
-      .validate(x => {
-        val d = File(x)
-        if (d.exists && d.isDirectory) success
-        else failure("Output directory not specified")
-      })
-      .action((x, c) => c.copy(outdir = File(x)))
   }
 }

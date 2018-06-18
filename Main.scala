@@ -6,8 +6,7 @@ import org.langmeta.internal.semanticdb.{vfs => v}
 
 import scala.meta.internal.semanticdb3.SymbolInformation
 
-case class Config(projectJars: File = File("/dev/null"),
-                  outdir: File = File("/dev/null"))
+case class Config(projectJars: File = File("/dev/null"))
 object Main {
   def main(args: Array[String]) = {
     val cliConfig = Cli.CliParser.parse(args, Config()).get
