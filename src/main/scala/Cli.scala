@@ -1,5 +1,3 @@
-package cz.cvut.fit.prl.scalaimplicit.application
-
 import better.files.File
 
 /**
