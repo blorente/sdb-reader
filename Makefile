@@ -10,8 +10,8 @@ SBT_COMMAND=sbt -batch -ivy $(FAKE_IVY_FOLDER) -mem $(SBT_MEMORY) -Dsbt.log.nofo
 CLOC_BY_FILE=cloc --csv --by-file-by-lang --list-file
 
 COURSIER=~/Software/coursier
-METACP_CACHE_DIR=./dependencies
-METACP_COMMAND=~/Software/coursier launch org.scalameta::metacp:$(SEMANTICDB_VERSION) -r sonatype:snapshots -- --cache-dir $(METACP_CACHE_DIR) --par --include-scala-library-synthetics
+METACP_CACHE_DIR=~/work/scala/.dependencies
+METACP_COMMAND=~/Software/coursier launch org.scalameta::metacp:$(SEMANTICDB_VERSION) -r sonatype:snapshots -- --cache-dir $(METACP_CACHE_DIR) --par
 
 all:
 	echo "No all for now"
@@ -35,9 +35,7 @@ $(FAKE_IVY_FOLDER):
 # 	cp $(SDB_0_13_PLUGIN_SOURCE) $(SDB_0_13_PLUGIN_TARGET)												  #
 #####################################################################################
 
-# Generate Semanticdb
-semanticdb-success: $(FAKE_IVY_FOLDER) # $(SDB_1_PLUGIN_TARGET) $(SDB_0_13_PLUGIN_TARGET)
-	$(SBT_COMMAND) semanticdb ; if [ $$? -eq 0 ] ; then echo "success!" > semanticdb-success ; fi
+# Generate Semanticdb for the project
 
 semanticdb-packages: semanticdb-success
 	$(SBT_COMMAND) "package" "test:package" ; \
@@ -45,19 +43,20 @@ semanticdb-packages: semanticdb-success
 		then find `pwd` -wholename "*target/scala-*/*_2.*-*.jar" > semanticdb-packages ; \
   fi
 
-dependencies-success: dependencies.dat
-	mkdir ./dependencies ; \
+semanticdb-success: $(FAKE_IVY_FOLDER) # $(SDB_1_PLUGIN_TARGET) $(SDB_0_13_PLUGIN_TARGET)
+	$(SBT_COMMAND) semanticdb ; if [ $$? -eq 0 ] ; then echo "success!" > semanticdb-success ; fi
+
+# Generate Semanticdb for the dependencies
+dependencies-packages: dependencies.dat $(METACP_CACHE_DIR)
+	> dependencies-packages ; \
 	for dep in $$(cat dependencies.dat | uniq) ; do \
-    $(METACP_COMMAND) $$dep ; \
-	done ; \
-	if [ $$? -eq 0 ] ; \
-		echo "success" > dependencies-success ; \
-	fi
+		$(METACP_COMMAND) $$dep >> dependencies-packages ; \
+	done ;
 
-dependencies-packages: dependencies-success
-	find ./dependencies -maxdepth 1 -mindepth 1 > dependencies-packages
+$(METACP_CACHE_DIR):
+	mkdir -p $(METACP_CACHE_DIR)
 
-dependencies.dat:
+dependencies.dat: $(FAKE_IVY_FOLDER)
 	$(SBT_COMMAND) "show test:fullClasspath" \
 	| sed -n -E 's/Attributed\(([^)]*)\)[,]?/\n\1\n/gp' \
 	| grep "^/" > dependencies.dat ;
