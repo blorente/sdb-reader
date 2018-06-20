@@ -2,12 +2,21 @@ import better.files._
 import org.langmeta.internal.semanticdb.{vfs => v}
 
 import scala.meta._
+import scala.meta.internal.semanticdb3.{SymbolInformation, TextDocument}
 
 case class Config(projectJars: File = File("/dev/null"))
+
+class SymbolRepository(documents: Traversable[TextDocument]) {
+  val symbols: Map[String, SymbolInformation] =
+    (for {
+      document <- documents.par
+      symbolDeclaration <- document.symbols
+    } yield symbolDeclaration.symbol -> symbolDeclaration).seq.toMap
+}
+
 object Main {
-  def main(args: Array[String]) = {
-    val cliConfig = Cli.CliParser.parse(args, Config()).get
-    def loadJars(jarsFiles: Traversable[String]) = for {
+  def loadJars(jarsFiles: Traversable[String]) =
+    for {
       jar <- jarsFiles
       classpath = Classpath(jar)
       database = v.Database.load(classpath)
@@ -15,16 +24,15 @@ object Main {
       doc <- withSchema.documents
     } yield doc
 
-    val projectDocs = loadJars(cliConfig.projectJars.lines)
-    val dependencyDocs = loadJars(File("./dependencies-packages").lines)
-    // dbs.head.synthetics.head.text.get.occurrences.map(_.symbol).map(firstDoc(_))
+  def main(args: Array[String]) = {
+    val projectJars = File("./projects/workshop/semanticdb-packages")
+    val dependencyJars = File("./projects/workshop/dependencies-packages")
 
-    //implicit val ctx: DocumentContext = new DocumentContext(dbs)
-    //val callSites = dbs.flatMap(doc => doc.occurrences.map(SchemaFactories.createCallSite(_, OccurrencePayload())))
-    //val declarations = dbs.flatMap(_.symbols.map(SchemaFactories.createDeclaration))
-//    val firstDoc = (for {
-//      symbol <- dbs.head.symbols
-//    } yield symbol.symbol -> symbol).toMap
+    val projectDocs = loadJars(projectJars.lines)
+    val dependencyDocs = loadJars(dependencyJars.lines)
+
+    val projectSymbols = new SymbolRepository(projectDocs)
+    val dependencySymbols = new SymbolRepository(dependencyDocs)
     println(projectDocs)
   }
 }
