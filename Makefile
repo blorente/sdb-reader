@@ -49,9 +49,7 @@ semanticdb-success: $(FAKE_IVY_FOLDER) # $(SDB_1_PLUGIN_TARGET) $(SDB_0_13_PLUGI
 # Generate Semanticdb for the dependencies
 dependencies-packages: dependencies.dat $(METACP_CACHE_DIR)
 	> dependencies-packages ; \
-	for dep in $$(cat dependencies.dat | uniq) ; do \
-		$(METACP_COMMAND) $$dep >> dependencies-packages ; \
-	done ;
+	sort dependencies.dat | uniq | parallel $(METACP_COMMAND) {} >> dependencies-packages \;
 
 $(METACP_CACHE_DIR):
 	mkdir -p $(METACP_CACHE_DIR)
