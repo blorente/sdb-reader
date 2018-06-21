@@ -3,15 +3,15 @@
 
 SEMANTICDB_VERSION=3.7.4
 
-IVY_CACHE=~/.ivy2/cache
+IVY_CACHE=/home/borja/.ivy2/cache
 FAKE_IVY_FOLDER=.ivy
 SBT_MEMORY=2000
 SBT_COMMAND=sbt -batch -ivy $(FAKE_IVY_FOLDER) -mem $(SBT_MEMORY) -Dsbt.log.noformat=true
 CLOC_BY_FILE=cloc --csv --by-file-by-lang --list-file
 
 COURSIER=~/Software/coursier
-METACP_CACHE_DIR=~/work/scala/.dependencies
-METACP_COMMAND=~/Software/coursier launch org.scalameta::metacp:$(SEMANTICDB_VERSION) -r sonatype:snapshots -- --cache-dir $(METACP_CACHE_DIR) --par
+METACP_CACHE_DIR=/home/borja/work/scala/.dependencies
+METACP_COMMAND=/home/borja/Software/coursier launch org.scalameta::metacp:$(SEMANTICDB_VERSION) -r sonatype:snapshots -- --cache-dir $(METACP_CACHE_DIR) --par
 
 all:
 	echo "No all for now"
@@ -48,16 +48,22 @@ semanticdb-success: $(FAKE_IVY_FOLDER) # $(SDB_1_PLUGIN_TARGET) $(SDB_0_13_PLUGI
 
 # Generate Semanticdb for the dependencies
 dependencies-packages: dependencies.dat $(METACP_CACHE_DIR)
-	> dependencies-packages ; \
+	echo "$(METACP_CACHE_DIR)/scala-library-synthetics.jar" > dependencies-packages ; \
 	sort dependencies.dat | uniq | parallel $(METACP_COMMAND) {} >> dependencies-packages \;
 
 $(METACP_CACHE_DIR):
 	mkdir -p $(METACP_CACHE_DIR)
+	$(METACP_COMMAND) $(RT_JAR_LOCATION)
+
+RT_JAR_LOCATION=/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar
+SBT_LAUNCH_JAR_LOCATION=/usr/share/sbt/bin/sbt-launch.jar
 
 dependencies.dat: $(FAKE_IVY_FOLDER)
 	$(SBT_COMMAND) "show test:fullClasspath" \
 	| sed -n -E 's/Attributed\(([^)]*)\)[,]?/\n\1\n/gp' \
-	| grep "^/" > dependencies.dat ;
+	| grep "^/" > dependencies.dat ; \
+	echo $(RT_JAR_LOCATION) >> dependencies.dat ; \
+	echo $(SBT_LAUNCH_JAR_LOCATION) >> dependencies.dat ;
 
 
 
