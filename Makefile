@@ -13,8 +13,13 @@ COURSIER=~/Software/coursier
 METACP_CACHE_DIR=/home/borja/work/scala/.dependencies
 METACP_COMMAND=/home/borja/Software/coursier launch org.scalameta::metacp:$(SEMANTICDB_VERSION) -r sonatype:snapshots -- --cache-dir $(METACP_CACHE_DIR) --par
 
-all:
-	echo "No all for now"
+all: semanticdb-packages dependencies-packages
+
+clean:
+	rm semanticdb-packages
+	rm semanticdb-success
+	rm dependencies-packages
+	rm dependencies.dat
 
 # Setup
 
