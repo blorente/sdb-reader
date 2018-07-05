@@ -1,4 +1,8 @@
-import scala.meta.internal.semanticdb3.SymbolInformation.{Kind, Property}
+package cz.cvut.fit.prl.scalaImplicit.processors
+
+import cz.cvut.fit.prl.scalaImplicit.SymbolRepository
+
+import scala.meta.internal.semanticdb3.SymbolInformation.Kind
 import scala.meta.internal.semanticdb3.SymbolInformation.Property.IMPLICIT
 import scala.meta.internal.semanticdb3.{SymbolInformation, TextDocument}
 
@@ -20,12 +24,12 @@ object ImplicitDeclarations extends Processor {
   }
 
   override def apply(docs: Traversable[TextDocument],
-                     symbols: SymbolRepository): ProcessResult = {
+                     symbols: SymbolRepository): Result = {
     val allImplicitDeclarations = gatherImplicitSymbols(docs, symbols)
 
     val implicitConversions = gatherImplicitConversions(allImplicitDeclarations, symbols)
 
-    ProcessResult(Set(
+    Result(Set(
       "implicit_declarations" -> allImplicitDeclarations.size.toString,
       "implicit_conversions" -> implicitConversions.size.toString
     ))

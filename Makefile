@@ -1,17 +1,26 @@
-#TODO: Move partial results and output to a separate dotfolder:
-# OUTDIR=.analysis
+# Variables that you might want to change
 
+# Version of semanticdb to use. Note that this must coincide with the one in the SBT plugins
 SEMANTICDB_VERSION=3.7.4
-
+# Absolute path to the directory where the ivy dependencies will be downloaded and stored
 IVY_CACHE=/home/borja/.ivy2/cache
-FAKE_IVY_FOLDER=.ivy
+# Amount of memory to allocate to each SBT command
 SBT_MEMORY=2000
-SBT_COMMAND=sbt -batch -ivy $(FAKE_IVY_FOLDER) -mem $(SBT_MEMORY) -Dsbt.log.noformat=true
-CLOC_BY_FILE=cloc --csv --by-file-by-lang --list-file
-
-COURSIER=~/Software/coursier
+# Directory where COURSIER is installed (we need it for metacp, see below)
+COURSIER=/home/borja/Software/coursier
+# Absolute path to the directory where the semanticdb files of dependencies will be stored
 METACP_CACHE_DIR=/home/borja/work/scala/.dependencies
-METACP_COMMAND=/home/borja/Software/coursier launch org.scalameta::metacp:$(SEMANTICDB_VERSION) -r sonatype:snapshots -- --cache-dir $(METACP_CACHE_DIR) --par
+# Location of additional jar files with dependencies not caught by SBT
+RT_JAR_LOCATION=/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar
+SBT_LAUNCH_JAR_LOCATION=/usr/share/sbt/bin/sbt-launch.jar
+
+# End of variables that you might want to change
+
+# Name of the fake ivy folder used to trick sbt into executing in parallel
+FAKE_IVY_FOLDER=.ivy
+# Command to execute the tools with all the flags already in place
+SBT_COMMAND=sbt -batch -ivy $(FAKE_IVY_FOLDER) -mem $(SBT_MEMORY) -Dsbt.log.noformat=true
+METACP_COMMAND=$(COURSIER) launch org.scalameta::metacp:$(SEMANTICDB_VERSION) -r sonatype:snapshots -- --cache-dir $(METACP_CACHE_DIR) --par
 
 all: semanticdb-packages dependencies-packages
 
@@ -27,6 +36,10 @@ $(FAKE_IVY_FOLDER):
 	mkdir $(FAKE_IVY_FOLDER)
 	ln -s $(IVY_CACHE) $(FAKE_IVY_FOLDER)/cache
 
+$(METACP_CACHE_DIR):
+	mkdir -p $(METACP_CACHE_DIR)
+	$(METACP_COMMAND) $(RT_JAR_LOCATION)
+
 #####################################################################################
 # This is an inelegant solution, I'd rather use the setup.sh script for now					#
 # SDB_1_PLUGIN_SOURCE="~/work/scala/sdb-reader/semanticdb-config-1.0-v3.scala"		  #
@@ -41,7 +54,6 @@ $(FAKE_IVY_FOLDER):
 #####################################################################################
 
 # Generate Semanticdb for the project
-
 semanticdb-packages: semanticdb-success
 	$(SBT_COMMAND) "package" "test:package" ; \
   if [ $$? -eq 0 ] ; \
@@ -56,19 +68,10 @@ dependencies-packages: dependencies.dat $(METACP_CACHE_DIR)
 	echo "$(METACP_CACHE_DIR)/scala-library-synthetics.jar" > dependencies-packages ; \
 	sort dependencies.dat | uniq | parallel $(METACP_COMMAND) {} >> dependencies-packages \;
 
-$(METACP_CACHE_DIR):
-	mkdir -p $(METACP_CACHE_DIR)
-	$(METACP_COMMAND) $(RT_JAR_LOCATION)
-
-RT_JAR_LOCATION=/usr/lib/jvm/java-8-oracle/jre/lib/rt.jar
-SBT_LAUNCH_JAR_LOCATION=/usr/share/sbt/bin/sbt-launch.jar
-
 dependencies.dat: $(FAKE_IVY_FOLDER)
 	$(SBT_COMMAND) "show test:fullClasspath" \
 	| sed -n -E 's/Attributed\(([^)]*)\)[,]?/\n\1\n/gp' \
 	| grep "^/" > dependencies.dat ; \
 	echo $(RT_JAR_LOCATION) >> dependencies.dat ; \
 	echo $(SBT_LAUNCH_JAR_LOCATION) >> dependencies.dat ;
-
-
 
