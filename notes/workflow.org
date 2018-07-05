@@ -104,7 +104,9 @@ make -C path/to/project -f ../../Makefile all
 
 ** Scala: Processing the semanticdb files
 
-*** Base Semanticdb Concepts (Based on [[https://github.com/scalameta/scalameta/blob/master/semanticdb/semanticdb3/semanticdb3.md][Semanticdb Spec]])
+*** Base Semanticdb Concepts
+    (Based on [[https://github.com/scalameta/scalameta/blob/master/semanticdb/semanticdb3/semanticdb3.md][Semanticdb Spec]])
+
 **** TextDocument
      Corresponds to information about a single Scala file in a project. 
      Therefore, a project's Semanticdb will consist of a series of TextDocuments.
